@@ -1,0 +1,117 @@
+#lineups
+zeros = ['0','0','0','0','0']
+import numpy as np
+pbp['lineup'] = pd.DataFrame(np.zeros((num,1)))
+pbp['lineup'] = pbp['lineup'].astype(object)
+for i in range(0,num):
+    pbp.set_value(i, 'lineup', zeros)
+    
+#denoting the lineups in lists so I can sort at subs and compare...this alone took me a week...
+lol = []
+l=[]
+lc = zeros[:]
+t=0
+for j,i in enumerate(alist):
+    if pbp.ix[i,'desc'] not in ('In','Out'):
+        if len(l) < 5:            
+            if pbp.ix[i,'player'].split(',', 2)[0] not in l:
+                l.extend([pbp.ix[i,'player'].split(',', 2)[0]])
+                if len(l)==5:
+                    l.sort()
+                    lol.append(l)
+        else:
+            if pbp.ix[alist[j-1],'lineup'] == zeros:
+                pbp.set_value(i,'lineup',lol[t])
+            else:
+                pbp.set_value(i,'lineup',pbp.ix[alist[j-1],'lineup'])
+    elif pbp.ix[i,'desc'] == 'In':
+        if len(l) < 5:
+            l.extend([pbp.ix[i,'player'].split(',', 2)[0]])
+            flag = 'sub'
+        else:
+            if pbp.ix[alist[j-1],'desc'] not in ('In','Out') and len(l)>4:
+                lc = lol[t][:]
+            lc.extend([pbp.ix[i,'player'].split(',', 2)[0]])
+            lc.sort()
+    elif pbp.ix[i,'desc'] == 'Out':
+        if flag == 'sub':
+            l.remove(pbp.ix[i,'player'].split(',', 2)[0])
+            flag = 'good'
+        else:
+            lc.remove(pbp.ix[i,'player'].split(',', 2)[0])
+            lc.sort()
+            if i < max(alist):
+                if pbp.ix[alist[j+1],'desc'] not in ('In','Out'):
+                    lol.append(lc)
+                    t+=1
+                    
+#copying down and up the lineups to unfilled cells
+f=200
+for i in range(0,num):
+    if pbp.ix[i,'lineup'] <> zeros and i < f and pbp.ix[i,'team'] == away:
+        f=i
+        
+for i in range(0,f):
+    pbp.set_value(i,'lineup',pbp.ix[f,'lineup'])
+
+
+for i in range(0,num):
+    if pbp.ix[i,'lineup'] <> zeros:
+        for u in range(i+1,num):
+            if pbp.ix[u,'lineup'] <> zeros:
+                break
+            else:
+                pbp.set_value(u,'lineup',pbp.ix[i,'lineup'])
+                
+#timer so that I can have criterium of over 300seconds
+pbp['timer']=0
+pbp.ix[0,'timer']=60-int(pbp.ix[0,'sec'])
+for i in range(1,num):
+    if int(pbp.ix[i-1,'sec'])>=int(pbp.ix[i,'sec']):
+        pbp.ix[i,'timer']=int(pbp.ix[i-1,'sec'])-int(pbp.ix[i,'sec'])
+    else:
+        pbp.ix[i,'timer']=int(pbp.ix[i-1,'sec'])-int(pbp.ix[i,'sec'])+60
+    
+    
+#spliting +/-
+###Reversed points to reflect Oly away!!!!SOS!!!
+pbp['hpts']=0
+pbp['apts']=0
+for i in range(0,num):
+    if pbp.ix[i,'team']==home:
+        pbp.ix[i,'apts']=pbp.ix[i,'pts']
+        pbp.ix[i,'hpts']=0
+    else:
+        pbp.ix[i,'hpts']=pbp.ix[i,'pts']
+        pbp.ix[i,'apts']=0
+        
+ptspbp=pbp.loc[:,['lineup','timer','hpts','apts']]
+ptspbp.lineup = ptspbp.lineup.apply(tuple)
+hf = ptspbp.groupby('lineup', as_index=False)['timer','hpts','apts'].sum()
+hf = hf[hf.timer > 60]
+hf['net']=hf['hpts']-hf['apts']
+hf = hf.sort_values(by='net',ascending=False)
+hf = hf.reset_index(drop=True)
+
+###h1=hf.loc[:,:]
+
+n=len(h1['lineup'])
+num=len(hf['lineup'])
+for i in range(0,num):
+    for j in range(0,n):
+        if h1.loc[j,'lineup'] == hf.loc[i,'lineup']:
+            h1.loc[j,'timer'] = h1.loc[j,'timer'] + hf.loc[i,'timer']
+            h1.loc[j,'hpts'] = h1.loc[j,'hpts'] + hf.loc[i,'hpts']
+            h1.loc[j,'apts'] = h1.loc[j,'apts'] + hf.loc[i,'apts']
+            h1.loc[j,'net'] = h1.loc[j,'hpts']-h1.loc[j,'apts']
+            t=1
+    if t==0:
+        h1.loc[n]=hf.loc[i]
+        n=len(h1['lineup'])
+    else:
+        t=0
+        
+best = h1[h1.timer > 600]
+best = best.sort_values(by='net',ascending=False)
+best = best.reset_index(drop=True)
+best

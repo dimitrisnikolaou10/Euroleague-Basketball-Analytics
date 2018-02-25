@@ -1,0 +1,269 @@
+import os
+import pandas as pd
+pbp = pd.read_csv('a15.txt', header = None)
+
+#fillnas, size of df
+pbp = pbp.fillna(0)
+num = len(pbp[2])
+home = 'Other'
+away = 'Oly'
+
+#merging first and last name
+for i in range(0,num):
+    if (pbp.ix[i,2].split()[1] <> '-'):
+        pbp.ix[i,1] = pbp.ix[i,1] + ', ' + pbp.ix[i,2].split(' ', 2)[1]
+        pbp.ix[i,2] = pbp.ix[i,2].split(' ', 2)[2]
+    elif type(pbp.ix[i,4]) is str:
+        if (pbp.ix[i,4] <> 0):
+            pbp.ix[i,3] = pbp.ix[i,3] + ', ' + pbp.ix[i,4].split(' ', 2)[1]
+            pbp.ix[i,4] = pbp.ix[i,4].split(' ', 2)[2]
+            
+#adding columns needed
+for i in range(5,51):
+    pbp[i]=0
+    
+
+for i in range(0,num):
+    if str(pbp.ix[i,1]).split('(', 1)[0] == 'TV Time Out ' or str(pbp.ix[i,1]).split('(', 1)[0] == 'Turnover ' or str(pbp.ix[i,1]).split('(', 1)[0] == 'Off Rebound ' or str(pbp.ix[i,1]).split('(', 1)[0] == 'Def Rebound ' or str(pbp.ix[i,3]).split('(', 1)[0] == 'TV Time Out ' or str(pbp.ix[i,3]).split('(', 1)[0] == 'Turnover ' or str(pbp.ix[i,3]).split('(', 1)[0] == 'Off Rebound ' or str(pbp.ix[i,3]).split('(', 1)[0] == 'Def Rebound ':
+        pbp = pbp.drop(i,axis=0)
+
+pbp = pbp.reset_index(drop=True)
+num = len(pbp[2])
+
+#minutes and seconds
+for i in range(0,num):
+    pbp.ix[i,5] = pbp.ix[i,0][0:2]
+    pbp.ix[i,6] = pbp.ix[i,0][3:5]
+    
+#score all in one location
+for i in range(0,num):
+    for j in range(2,4):
+        pbp.ix[i,j] = str(pbp.ix[i,j])
+
+for i in range(0,num):
+    if len(pbp.ix[i,2]) > 3:
+        if (pbp.ix[i,2].split()[1] == '-'):
+                pbp.ix[i,7] = pbp.ix[i,2]
+                pbp.ix[i,2] = 0
+                
+for i in range(0,num):
+    if len(pbp.ix[i,3]) > 3:
+        if (pbp.ix[i,3].split()[1] == '-'):
+                pbp.ix[i,7] = pbp.ix[i,3]
+                pbp.ix[i,3] = 0
+                
+#taking care of time ous
+for i in range(0,num):
+    if str(pbp.ix[i,1]).split('(', 1)[0] == 'Time Out ':
+        pbp.ix[i,2] = pbp.ix[i,1]
+        pbp.ix[i,1] = home
+    elif str(pbp.ix[i,3]).split('(', 1)[0] == 'Time Out ':
+        pbp.ix[i,4] = pbp.ix[i,3]
+        pbp.ix[i,3] = away
+
+#### denote team in offense, players all in one location, description all in location     
+
+for i in range(0,num):
+    if (pbp.ix[i,3] == 0) or (pbp.ix[i,3] == '0'):
+        pbp.ix[i,8] = home
+    else:    
+        pbp.ix[i,8] = away
+        pbp.ix[i,1] = pbp.ix[i,3]
+        pbp.ix[i,2] = pbp.ix[i,4]
+        
+del pbp[0],pbp[3],pbp[4]
+
+for i in range(0,num):
+    if (pbp.ix[i,8] == home):
+        pbp.ix[i,9] = pbp.ix[i,7].split(' ', 2)[0]
+        if i > 0:
+            pbp.ix[i,10] = pbp.ix [i-1,10]
+    else:
+        pbp.ix[i,10] = pbp.ix[i,7].split(' ', 2)[2]
+        if i > 0:
+            pbp.ix[i,9] = pbp.ix [i-1,9]
+        
+for i in range(0,num):
+    pbp.ix[i,2] = str(pbp.ix[i,2])
+    pbp.ix[i,2] = pbp.ix[i,2].split('(', 2)[0]
+    
+
+del pbp[7]
+
+#rearranging columns
+cols = [5L, 6L, 9L, 10L, 8L, 1L, 2L, 11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L, 19L,
+        20L, 21L, 22L, 23L, 24L, 25L, 26L, 27L, 28L, 29L, 30L, 31L, 32L, 33L, 34L,
+        35L, 36L, 37L, 38L, 39L, 40L, 41L, 42L, 43L, 44L, 45L, 46L, 47L, 48L, 49L, 50L]
+pbp = pbp[cols]
+pbp.columns = ['min', 'sec', 'hscore', 'ascore', 'team', 'player', 'desc',
+               'ftin', 'fto', '2pin', '2po', '3pin', '3po', 'pts', 'ast', 'tov', 'st',
+               'fm', 'fd', 'dr', 'or', 'bm', 'br', 'to',
+               'tftin', 'tfto', 't2pin', 't2po', 't3pin', 't3po', 'tpts', 'tast', 'ttov', 'tst',
+               'tfm', 'tfd', 'tdr', 'tor', 'tbm', 'tbr', 'tto',
+               'tvto', 'tech','in','out', 'pir', 'poss']
+               
+#Description of play to ones and zeros
+#note the extra space after the description
+for i in range(0,num):
+    list = pbp[pbp['player'] == pbp.ix[i,'player']].index.tolist()    
+    if pbp.ix[i,'desc'] == 'Two Pointer ':
+        pbp.ix[i,'2pin'] = 1
+        pbp.ix[i,'pts'] = pbp.ix[i,'pts'] + 2
+        if i == min(list):
+            pbp.ix[list,'t2pin'] = pbp.ix[i,'2pin']
+            pbp.ix[list, 'pir'] = pbp.ix[i,'pts']
+        else:
+            pbp.ix[[x for x in list if x >= i],'t2pin'] = pbp.ix[max([x for x in list if x < i]),'t2pin'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] + 2
+    elif pbp.ix[i,'desc'] == 'Missed Two Pointer ':
+        pbp.ix[i,'2po'] = 1
+        if i == min(list):
+            pbp.ix[list,'t2po'] = pbp.ix[i,'2po']
+            pbp.ix[list, 'pir'] = - 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'t2po'] = pbp.ix[max([x for x in list if x < i]),'t2po'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] - 1
+    elif pbp.ix[i,'desc'] == 'Free Throw In ':
+        pbp.ix[i,'ftin'] = 1
+        pbp.ix[i,'pts'] = pbp.ix[i,'pts'] + 1
+        if i == min(list):
+            pbp.ix[list,'tftin'] = pbp.ix[i,'ftin']
+            pbp.ix[list, 'pir'] = 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'tftin'] = pbp.ix[max([x for x in list if x < i]),'tftin'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] + 1
+    elif pbp.ix[i,'desc'] == 'Missed Free Throw ':
+        pbp.ix[i,'fto'] = 1
+        if i == min(list):
+            pbp.ix[list,'tfto'] = pbp.ix[i,'fto']
+            pbp.ix[list, 'pir'] = - 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'tfto'] = pbp.ix[max([x for x in list if x < i]),'tfto'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] - 1
+    elif pbp.ix[i,'desc'] == 'Three Pointer ':
+        pbp.ix[i,'3pin'] = 1
+        pbp.ix[i,'pts'] = pbp.ix[i,'pts'] + 3
+        if i == min(list):
+            pbp.ix[list,'tftin'] = pbp.ix[i,'ftin']
+            pbp.ix[list, 'pir'] =  3
+        else:
+            pbp.ix[[x for x in list if x >= i],'tftin'] = pbp.ix[max([x for x in list if x < i]),'tftin'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] + 3
+    elif pbp.ix[i,'desc'] == 'Missed Three Pointer ':
+        pbp.ix[i,'3po'] = 1
+        if i == min(list):
+            pbp.ix[list,'t3po'] = pbp.ix[i,'3po']
+            pbp.ix[list, 'pir'] = - 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'t3po'] = pbp.ix[max([x for x in list if x < i]),'t3po'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] - 1
+    elif pbp.ix[i,'desc'] == 'Assist ':
+        pbp.ix[i,'ast'] = 1
+        if i == min(list):
+            pbp.ix[list,'tast'] = pbp.ix[i,'ast']
+            pbp.ix[list, 'pir'] = 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'tast'] = pbp.ix[max([x for x in list if x < i]),'tast'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] + 1
+    elif pbp.ix[i,'desc'] == 'Turnover ':
+        pbp.ix[i,'tov'] = 1
+        if i == min(list):
+            pbp.ix[list,'ttov'] = pbp.ix[i,'tov']
+            pbp.ix[list, 'pir'] = - 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'ttov'] = pbp.ix[max([x for x in list if x < i]),'ttov'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] - 1
+    elif pbp.ix[i,'desc'] == 'Steal ':
+        pbp.ix[i,'st'] = 1
+        if i == min(list):
+            pbp.ix[list,'tst'] = pbp.ix[i,'st']
+            pbp.ix[list, 'pir'] = + 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'tst'] = pbp.ix[max([x for x in list if x < i]),'tst'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] + 1
+    elif pbp.ix[i,'desc'] == 'Foul ' or pbp.ix[i,'desc'] == 'Offensive Foul ':
+        pbp.ix[i,'fm'] = 1
+        if i == min(list):
+            pbp.ix[list,'tfm'] = pbp.ix[i,'fm']
+            pbp.ix[list, 'pir'] = - 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'tfm'] = pbp.ix[max([x for x in list if x < i]),'tfm'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] - 1
+    elif pbp.ix[i,'desc'] == 'Foul Drawn ':
+        pbp.ix[i,'fd'] = 1
+        if i == min(list):
+            pbp.ix[list,'tfd'] = pbp.ix[i,'fd']
+            pbp.ix[list, 'pir'] = + 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'tfd'] = pbp.ix[max([x for x in list if x < i]),'tfd'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] + 1
+    elif pbp.ix[i,'desc'] == 'Block ':
+        pbp.ix[i,'bm'] = 1
+        if i == min(list):
+            pbp.ix[list,'tbm'] = pbp.ix[i,'bm']
+            pbp.ix[list, 'pir'] = + 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'tbm'] = pbp.ix[max([x for x in list if x < i]),'tbm'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] + 1
+    elif pbp.ix[i,'desc'] == 'Shot Rejected ':
+        pbp.ix[i,'br'] = 1
+        if i == min(list):
+            pbp.ix[list,'tbr'] = pbp.ix[i,'br']
+            pbp.ix[list, 'pir'] = - 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'tbr'] = pbp.ix[max([x for x in list if x < i]),'tbr'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] - 1
+    elif pbp.ix[i,'desc'] == 'Def Rebound ':
+        pbp.ix[i,'dr'] = 1
+        if i == min(list):
+            pbp.ix[list,'tdr'] = pbp.ix[i,'dr']
+            pbp.ix[list, 'pir'] = 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'tdr'] = pbp.ix[max([x for x in list if x < i]),'tdr'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] + 1
+    elif pbp.ix[i,'desc'] == 'Off Rebound ':
+        pbp.ix[i,'or'] = 1
+        if i == min(list):
+            pbp.ix[list,'tor'] = pbp.ix[i,'or']
+            pbp.ix[list, 'pir'] = 1
+        else:
+            pbp.ix[[x for x in list if x >= i],'tor'] = pbp.ix[max([x for x in list if x < i]),'tor'] + 1
+            pbp.ix[[x for x in list if x >= i],'pir'] = pbp.ix[max([x for x in list if x < i]),'pir'] + 1
+    elif pbp.ix[i,'desc'] == 'Technical Foul ':
+        pbp.ix[i,'tech'] = 1
+    elif pbp.ix[i,'desc'] == 'In':
+        pbp.ix[i,'in'] = 1
+    elif pbp.ix[i,'desc'] == 'Out':
+        pbp.ix[i,'out'] = 1
+    elif pbp.ix[i,'desc'] == 'Time Out ':
+        pbp.ix[i,'to'] = 1
+        if i == min(list):
+            pbp.ix[list,'tto'] = pbp.ix[i,'to']
+        else:
+            pbp.ix[[x for x in list if x >= i],'tto'] = pbp.ix[max([x for x in list if x < i]),'tto'] + 1
+    elif pbp.ix[i,'desc'] == 'TV Time Out ':
+        pbp.ix[i,'tvto'] = 1
+        
+#possesions
+hlist = pbp[pbp['team'] == home].index.tolist()
+for i in hlist:
+    if i == min(hlist):
+        pbp.ix[hlist, 'poss'] = 1
+    else:
+        if (pbp.ix[i - 1, 'team'] == away and pbp.ix[i,'fm'] == 0 and pbp.ix[i,'bm'] == 0 and pbp.ix[i,'in'] == 0 and pbp.ix[i,'out'] == 0 and pbp.ix[i,'fd'] == 0) or (pbp.ix[i,'fd'] == 1 and pbp.ix[i - 1, 'team'] == away and pbp.ix[i + 1, 'team'] == away):
+            pbp.ix[[x for x in hlist if x >= i],'poss'] = pbp.ix[max([x for x in hlist if x < i]),'poss'] + 1
+
+hposs = pbp.ix[max(hlist), 'poss']            
+            
+alist = pbp[pbp['team'] == away].index.tolist()
+for i in alist:
+    if i == min(alist):
+        pbp.ix[alist, 'poss'] = 1
+    else:
+        if (pbp.ix[i - 1, 'team'] == home and pbp.ix[i,'fm'] == 0 and pbp.ix[i,'bm'] == 0 and pbp.ix[i,'in'] == 0 and pbp.ix[i,'out'] == 0 and pbp.ix[i,'fd'] == 0) or (pbp.ix[i,'fd'] == 1 and pbp.ix[i - 1, 'team'] == home and pbp.ix[i + 1, 'team'] == home):
+            pbp.ix[[x for x in alist if x >= i],'poss'] = pbp.ix[max([x for x in alist if x <= i]),'poss'] + 1  
+            
+aposs = pbp.ix[max(alist), 'poss']
+
+poss = round((hposs+aposs)/2)
+

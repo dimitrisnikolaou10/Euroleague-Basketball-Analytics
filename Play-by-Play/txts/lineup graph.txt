@@ -1,0 +1,53 @@
+import matplotlib.pyplot as plt
+from __future__ import division
+
+n=len(best['timer'])
+ratio=[0]*25
+for i in range(0,n):
+    ratio[i]=100*best.loc[i,'timer']/72000
+    
+#n=len(best['timer'])
+#w = pd.DataFrame(np.random.randn(n, 1))
+#for i in range(0,n):
+#    w.loc[i,0] = ((best.loc[i,'timer'] - min(best['timer'])) / (max(best['timer']) - min(best['timer'])))+0.5
+
+x=range(0,25)
+y=best['net']
+fig, ax = plt.subplots(figsize = (20,10))
+plt.bar(x, y, width=0.8, color=color_list)
+plt.axis([-1, 26, -50, +50])
+plt.plot([-2, 28], [0, 0], color='black', linestyle='-', linewidth=1)
+ax.set_xticks([])
+for i in range(1,n+1):
+    ax.text(i-0.8, 1, i, fontsize=15)
+for i in range(0,5):
+    ax.text(13, 41-5*i,i+1 and '[%s]' % ', '.join(map(str, best.loc[i,'lineup'])) , style='italic')
+for i in range(0,5):
+    ax.text(12.4, 41-5*i-0.5, i+1, fontsize=15)
+for i in range(20,25):
+    ax.text(2, -i*5+85,i+1 and '[%s]' % ', '.join(map(str, best.loc[i,'lineup'])) , style='italic')
+for i in range(20,25):
+    ax.text(1.3, -i*5+85-0.5, i+1, fontsize=15)
+
+color_list = ['#05AE00','#06C600','#6DC86A','#07DC00','#08F000','#0BFF02','#7CFF77',
+              '#94FE5A','#B3FE5A','#CAFE5A','#D7FB8A','#DCFF00','#ECFF00','#F4FD84',
+              '#FFCD00','#FF9E00','#FF6100','#FFAB78','#FB7726','#FF6100','#FF531C',
+              '#FF1C1C','#FF5B5B','#FF3838','#FF0000']
+ax.text(15, 46,'Most efficient lineups (+/-)', style='italic',
+    bbox={'facecolor':'green', 'alpha':0.25, 'pad':10})
+ax.text(21, 46,'% of total mins played', style='italic',
+    bbox={'facecolor':'green', 'alpha':0.25, 'pad':10})
+for i in range(0,5):
+    ax.text(22, 40.5-5*i,(round(ratio[i],1)), style='italic')
+    
+ax.text(3, -10,'Least efficient lineups (+/-)', style='italic',
+    bbox={'facecolor':'red', 'alpha':0.25, 'pad':10})
+ax.text(10.5, -10,'% of total mins played', style='italic',
+    bbox={'facecolor':'red', 'alpha':0.25, 'pad':10})
+for i in range(20,25):
+    ax.text(11, -5*i+84.5,(round(ratio[i],1)), style='italic')
+    
+plt.title('Lineup efficiency (restricted to lineups that played at least 10 minutes together)')
+plt.ylabel('Net Rating (+/-)')
+plt.xlabel('Lineup')
+plt.show()
